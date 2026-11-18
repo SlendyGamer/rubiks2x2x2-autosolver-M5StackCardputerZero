@@ -129,12 +129,12 @@ void ensure_long_press_timer() {
 
 void route_key_state(uint32_t key, bool pressed) {
     const bool new_hold = pressed && (!last_key_pressed || pressed_key != key);
-    const bool arrow_repeat = pressed && last_key_pressed && pressed_key == key &&
-                              (key == LV_KEY_UP || key == LV_KEY_DOWN || key == LV_KEY_LEFT || key == LV_KEY_RIGHT);
-    if (arrow_repeat) {
-        emit_global_key(key, false);
-    }
-    else if (new_hold) {
+    if (new_hold) {
+        // Only one key is tracked at a time: pressing another key ends the previous hold,
+        // so listeners never wait for a release that would be dropped.
+        if (pressed_key != 0 && pressed_key != key && key_release_listener) {
+            key_release_listener(pressed_key, describe_key(pressed_key), key_release_listener_user_data);
+        }
         pressed_key = key;
         press_started_at = lv_tick_get();
         long_press_sent = false;
@@ -144,7 +144,7 @@ void route_key_state(uint32_t key, bool pressed) {
             dispatch_nav_key(key);
         }
     }
-    else if (!pressed && last_key_pressed && pressed_key == key) {
+    else if (!pressed && pressed_key != 0 && pressed_key == key) {
         if (key_release_listener) {
             key_release_listener(key, describe_key(key), key_release_listener_user_data);
         }
@@ -211,6 +211,8 @@ uint32_t map_evdev_key(uint16_t code) {
             return 'd';
         case KEY_S:
             return 's';
+        case KEY_H:
+            return 'h';
         case KEY_UP:
             return LV_KEY_UP;
         case KEY_DOWN:
@@ -249,6 +251,7 @@ bool has_nav_keys(int fd) {
 
     return has_key(KEY_ESC) || has_key(KEY_LEFT) || has_key(KEY_RIGHT) || has_key(KEY_Z) ||
            has_key(KEY_X) || has_key(KEY_Y) || has_key(KEY_B) || has_key(KEY_D) || has_key(KEY_S) ||
+           has_key(KEY_H) ||
            has_key(KEY_UP) || has_key(KEY_DOWN) ||
            has_key(KEY_C) || has_key(KEY_4) || has_key(KEY_5) || has_key(KEY_6) ||
            has_key(KEY_7) || has_key(KEY_8) || has_key(KEY_SYSRQ) || has_key(KEY_HELP);
@@ -281,8 +284,7 @@ void evdev_read_cb(lv_indev_t* indev, lv_indev_data_t* data) {
             continue;
         }
 
-        const bool arrow = key == LV_KEY_UP || key == LV_KEY_DOWN || key == LV_KEY_LEFT || key == LV_KEY_RIGHT;
-        if (input.value == 2 && !arrow) {
+        if (input.value == 2) {
             continue;
         }
 

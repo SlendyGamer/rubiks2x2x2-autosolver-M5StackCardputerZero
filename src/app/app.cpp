@@ -190,6 +190,8 @@ private:
     }
 
     void handle_release(uint32_t key) {
+        view_model_.handle_cube_key_release(key);
+
         if (key != exit_key_pressed_) {
             return;
         }
@@ -284,6 +286,8 @@ int Application::run() {
     } else {
         LOG_WARN("failed to load config {}: {}; using defaults", loaded_config_path, config_error);
     }
+    // The cube is always shown as white text on a black background, whatever the config says.
+    view_model.set_dark_mode(true);
 
 #if USE_DESKTOP
     DesktopSimulatorFrame simulator_frame(assets);

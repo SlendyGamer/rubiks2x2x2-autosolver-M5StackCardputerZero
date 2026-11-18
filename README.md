@@ -50,7 +50,7 @@ In this example project, we used small MVVM-style structure around LVGL:
 - **View model**: `BaseViewModel` exposes the cube state, turn animation, camera and solver search (run on a worker thread) as LVGL observer subjects, and handles the cube keys.
 - **Reactive/data binding**: `src/reactive` wraps LVGL observer subjects and common bindings so labels, styles, flags, widget values, and events can be connected to application state.
 - **Data flow**: user input triggers widget callbacks, callbacks update `BaseViewModel`, view model publishes subjects, and bound UI objects refresh automatically through LVGL observers.
-- **Platform layer**: platform code owns Linux input integration and other hardware-facing services, including the cube keys, `Shift` handling and arrow-key autorepeat.
+- **Platform layer**: platform code owns Linux input integration and other hardware-facing services, including the cube keys and `Shift` handling.
 
 Current UI: a single cube screen with the 3D cube on the left, the status and the solution moves on the right, and the key hints in the bottom bar.
 
@@ -123,7 +123,7 @@ Theme startup behavior is configured in `config/template-app.conf`:
 dark_mode=yes
 ```
 
-Set `dark_mode` to `yes` or `no`. The parser also accepts `true`/`false` and `1`/`0`.
+This app always renders white text on a black background, so `dark_mode` is ignored at startup. The parser also accepts `true`/`false` and `1`/`0`.
 Installed device builds use `/etc/template-app.conf` as the system default. Changing the theme
 from the navigation bar (keyboard shortcut `6`) writes a per-user override to
 `$XDG_CONFIG_HOME/template-app/template-app.conf`, or `~/.config/template-app/template-app.conf`
@@ -414,7 +414,8 @@ The app is a 3D interactive 2x2x2 Rubik's cube with an automatic solver. Keys:
 | `X` / `Y` / `Z` | Turn a layer (hold `Shift` for the reverse turn) |
 | `B` / `D` | Search a solution with BFS / DFS |
 | `S` | Play the solution found |
-| Arrows | Rotate the camera |
+| `H` | Hide / show the text; the cube slides to the centre and back |
+| Arrows | Rotate the camera 15° per tap; hold to keep rotating |
 | Hold `ESC` | Exit |
 | `HELP` | Keyboard help |
 

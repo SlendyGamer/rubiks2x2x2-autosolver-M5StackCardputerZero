@@ -21,11 +21,12 @@ struct HelpRow {
     const char* action;
 };
 
-constexpr std::array<HelpRow, 5> kCubeRows = {{
+constexpr std::array<HelpRow, 6> kCubeRows = {{
     {"X / Y / Z", "Turn (Shift reverses)"},
     {"B / D", "Search BFS / DFS"},
     {"S", "Play solution"},
-    {"ARROWS", "Rotate camera"},
+    {"H", "Hide / show text"},
+    {"ARROWS", "Rotate camera (hold)"},
     {"HOLD ESC", "Exit"},
 }};
 
@@ -83,7 +84,7 @@ void HelpPopup::build() {
     lv_obj_align(rows, LV_ALIGN_TOP_MID, 0, 35);
     lv_obj_set_flex_flow(rows, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_flex_align(rows, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    lv_obj_set_style_pad_row(rows, 1, 0);
+    lv_obj_set_style_pad_row(rows, 0, 0);
     lv_obj_clear_flag(rows, LV_OBJ_FLAG_SCROLLABLE);
 
     auto* key_font = assets_.load_standard_font(11);
@@ -91,7 +92,7 @@ void HelpPopup::build() {
     for (auto& widgets : rows_) {
         widgets.row = lv_obj_create(rows);
         lv_obj_remove_style_all(widgets.row);
-        lv_obj_set_size(widgets.row, LV_PCT(100), 16);
+        lv_obj_set_size(widgets.row, LV_PCT(100), 14);
         lv_obj_clear_flag(widgets.row, LV_OBJ_FLAG_SCROLLABLE);
 
         widgets.key = lv_label_create(widgets.row);
@@ -162,7 +163,7 @@ void HelpPopup::apply_theme() {
         return;
     }
     const auto colors = view::palette(view_model_.is_dark_mode());
-    lv_obj_set_style_bg_color(panel_, colors.surface, 0);
+    lv_obj_set_style_bg_color(panel_, colors.button, 0);
     lv_obj_set_style_border_color(panel_, colors.border, 0);
     lv_obj_set_style_shadow_color(panel_, lv_color_black(), 0);
     lv_obj_set_style_text_color(title_, colors.text, 0);

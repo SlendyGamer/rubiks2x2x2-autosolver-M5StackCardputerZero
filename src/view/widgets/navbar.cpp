@@ -18,10 +18,11 @@ struct ShortcutSpec {
     const char* action;
 };
 
-constexpr std::array<ShortcutSpec, 3> kShortcuts = {{
+constexpr std::array<ShortcutSpec, 4> kShortcuts = {{
     {"X/Y/Z", "Turn"},
     {"B/D", "Search"},
     {"S", "Solve"},
+    {"H", "Hide"},
 }};
 
 } // namespace
@@ -48,8 +49,9 @@ void NavBar::build() {
     lv_obj_clear_flag(core_obj_, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_flex_flow(core_obj_, LV_FLEX_FLOW_ROW);
     lv_obj_set_flex_align(core_obj_, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_hor(core_obj_, 18, 0);
     reactive::bind_theme(core_obj_, view_model_.dark_mode_subject(), reactive::ThemeRole::Bar);
+    // The Bar theme role resets the padding, so it is set afterwards.
+    lv_obj_set_style_pad_hor(core_obj_, 8, 0);
 
     create_shortcut_hints();
     theme_observer_ = reactive::observe_obj(core_obj_, view_model_.dark_mode_subject(), theme_observer_cb, this);

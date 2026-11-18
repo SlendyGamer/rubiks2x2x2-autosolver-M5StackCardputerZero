@@ -58,12 +58,12 @@ constexpr uint32_t kInfo         = 0x70c0e8;
 constexpr uint32_t kSuccess      = 0x63e2b7;
 constexpr uint32_t kWarning      = 0xf2c97d;
 constexpr uint32_t kError        = 0xe88080;
-constexpr uint32_t kBody         = 0x101014;
-constexpr uint32_t kCard         = 0x18181c;
-constexpr uint32_t kAction       = 0x0f0f0f;
+constexpr uint32_t kBody         = 0x000000;
+constexpr uint32_t kCard         = 0x000000;
+constexpr uint32_t kAction       = 0x000000;
 constexpr uint32_t kButton       = 0x141414;
 constexpr uint32_t kBorder       = 0x3d3d3d;
-constexpr uint32_t kTextPrimary  = 0xe6e6e6;
+constexpr uint32_t kTextPrimary  = 0xffffff;
 constexpr uint32_t kTextDisabled = 0x616161;
 } // namespace dark
 

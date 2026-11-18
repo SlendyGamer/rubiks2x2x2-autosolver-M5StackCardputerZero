@@ -33,7 +33,7 @@ private:
 
     viewmodel::BaseViewModel& view_model_;
     app::AssetManager& assets_;
-    std::array<lv_obj_t*, 3> shortcut_key_labels_{};
+    std::array<lv_obj_t*, 4> shortcut_key_labels_{};
     lv_observer_t* theme_observer_{nullptr};
 };
 

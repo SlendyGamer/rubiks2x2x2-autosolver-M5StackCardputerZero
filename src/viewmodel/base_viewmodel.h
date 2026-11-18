@@ -36,7 +36,8 @@ public:
     lv_subject_t* cube_revision_subject();
     lv_subject_t* status_subject();
     lv_subject_t* moves_subject();
-
+    // True while the status/moves text is hidden and the cube sits in the middle.
+    lv_subject_t* info_hidden_subject();
     bool is_dark_mode() const;
     void set_dark_mode(bool enabled);
     void toggle_dark_mode();
@@ -53,7 +54,8 @@ public:
 
     // Same keys as the GLUT version. Returns true when the key was used.
     bool handle_cube_key(uint32_t key);
-
+    // Stops the camera rotation started by holding an arrow key.
+    void handle_cube_key_release(uint32_t key);
     void turn(char move);
     void search(bool use_bfs);
     void play_solution();
@@ -67,6 +69,8 @@ private:
     void start_next_solution_move();
     void on_turn_tick();
     void on_search_tick();
+    void on_orbit_tick();
+    void orbit_key(uint32_t key, float degrees);
     void set_solution(const char* moves, int count);
     void publish_moves();
     void bump_cube_revision();
@@ -74,6 +78,7 @@ private:
 
     static void turn_timer_cb(lv_timer_t* timer);
     static void search_timer_cb(lv_timer_t* timer);
+    static void orbit_timer_cb(lv_timer_t* timer);
 
     model::BaseModel model_;
     model::CubeModel cube_;
@@ -84,9 +89,12 @@ private:
     reactive::IntSubject cube_revision_subject_;
     reactive::StringSubject<40> status_subject_;
     reactive::StringSubject<96> moves_subject_;
+    reactive::BoolSubject info_hidden_subject_;
 
     float pitch_{30.0f};
     float yaw_{0.0f};
+    uint32_t held_orbit_key_{0};
+    uint32_t orbit_held_since_{0};
     char turning_move_{0};
     float turning_angle_{0.0f};
     bool playing_{false};
@@ -94,6 +102,7 @@ private:
 
     lv_timer_t* turn_timer_{nullptr};
     lv_timer_t* search_timer_{nullptr};
+    lv_timer_t* orbit_timer_{nullptr};
     std::shared_ptr<SearchJob> job_;
     std::thread worker_;
 };

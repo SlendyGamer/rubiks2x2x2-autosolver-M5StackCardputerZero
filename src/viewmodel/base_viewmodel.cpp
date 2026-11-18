@@ -14,10 +14,14 @@
 namespace viewmodel {
 namespace {
 
-// Same values as the GLUT version: 5 degrees every 20 ms, 2.5 degrees per arrow press.
+// Same values as the GLUT version for the turn: 5 degrees every 20 ms.
 constexpr uint32_t kTurnPeriodMs = 20;
 constexpr float kTurnStepDegrees = 5.0f;
-constexpr float kCameraStepDegrees = 2.5f;
+// One arrow tap moves the camera 15 degrees (360 is a multiple); holding it for longer than
+// kOrbitHoldDelayMs keeps the camera rotating smoothly until the key is released.
+constexpr float kCameraStepDegrees = 15.0f;
+constexpr uint32_t kOrbitHoldDelayMs = 300;
+constexpr float kOrbitHoldStepDegrees = 3.0f;
 constexpr uint32_t kSearchPollMs = 50;
 constexpr int kMaxSolutionMoves = 32;
 
@@ -42,11 +46,14 @@ BaseViewModel::BaseViewModel()
       quit_requested_subject_(false),
       cube_revision_subject_(0),
       status_subject_("Ready"),
-      moves_subject_("") {
+      moves_subject_(""),
+      info_hidden_subject_(false) {
     turn_timer_ = lv_timer_create(turn_timer_cb, kTurnPeriodMs, this);
     search_timer_ = lv_timer_create(search_timer_cb, kSearchPollMs, this);
+    orbit_timer_ = lv_timer_create(orbit_timer_cb, kTurnPeriodMs, this);
     lv_timer_pause(turn_timer_);
     lv_timer_pause(search_timer_);
+    lv_timer_pause(orbit_timer_);
 }
 
 BaseViewModel::~BaseViewModel() {
@@ -60,6 +67,9 @@ BaseViewModel::~BaseViewModel() {
     }
     if (search_timer_) {
         lv_timer_delete(search_timer_);
+    }
+    if (orbit_timer_) {
+        lv_timer_delete(orbit_timer_);
     }
 }
 
@@ -89,6 +99,10 @@ lv_subject_t* BaseViewModel::status_subject() {
 
 lv_subject_t* BaseViewModel::moves_subject() {
     return moves_subject_.native();
+}
+
+lv_subject_t* BaseViewModel::info_hidden_subject() {
+    return info_hidden_subject_.native();
 }
 
 bool BaseViewModel::is_dark_mode() const {
@@ -149,20 +163,55 @@ bool BaseViewModel::handle_cube_key(uint32_t key) {
         case 's': case 'S':
             play_solution();
             return true;
+        case 'h': case 'H':
+            info_hidden_subject_.toggle();
+            return true;
         case LV_KEY_UP:
-            orbit(-kCameraStepDegrees, 0.0f);
-            return true;
         case LV_KEY_DOWN:
-            orbit(kCameraStepDegrees, 0.0f);
-            return true;
         case LV_KEY_RIGHT:
-            orbit(0.0f, kCameraStepDegrees);
-            return true;
         case LV_KEY_LEFT:
-            orbit(0.0f, -kCameraStepDegrees);
+            if (held_orbit_key_ != key) {
+                orbit_key(key, kCameraStepDegrees);
+                held_orbit_key_ = key;
+                orbit_held_since_ = lv_tick_get();
+                lv_timer_reset(orbit_timer_);
+                lv_timer_resume(orbit_timer_);
+            }
             return true;
         default:
             return false;
+    }
+}
+
+void BaseViewModel::handle_cube_key_release(uint32_t key) {
+    if (key == held_orbit_key_) {
+        held_orbit_key_ = 0;
+        lv_timer_pause(orbit_timer_);
+    }
+}
+
+void BaseViewModel::on_orbit_tick() {
+    if (held_orbit_key_ != 0 && lv_tick_elaps(orbit_held_since_) >= kOrbitHoldDelayMs) {
+        orbit_key(held_orbit_key_, kOrbitHoldStepDegrees);
+    }
+}
+
+void BaseViewModel::orbit_key(uint32_t key, float degrees) {
+    switch (key) {
+        case LV_KEY_UP:
+            orbit(-degrees, 0.0f);
+            break;
+        case LV_KEY_DOWN:
+            orbit(degrees, 0.0f);
+            break;
+        case LV_KEY_RIGHT:
+            orbit(0.0f, degrees);
+            break;
+        case LV_KEY_LEFT:
+            orbit(0.0f, -degrees);
+            break;
+        default:
+            break;
     }
 }
 
@@ -324,6 +373,13 @@ void BaseViewModel::search_timer_cb(lv_timer_t* timer) {
     auto* view_model = static_cast<BaseViewModel*>(lv_timer_get_user_data(timer));
     if (view_model) {
         view_model->on_search_tick();
+    }
+}
+
+void BaseViewModel::orbit_timer_cb(lv_timer_t* timer) {
+    auto* view_model = static_cast<BaseViewModel*>(lv_timer_get_user_data(timer));
+    if (view_model) {
+        view_model->on_orbit_tick();
     }
 }
 
