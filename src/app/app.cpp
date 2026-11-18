@@ -156,7 +156,7 @@ private:
                     help_popup_->hide();
                 }
                 else {
-                    help_popup_->show(view_model_.current_page());
+                    help_popup_->show();
                 }
             }
             return true;
@@ -169,30 +169,22 @@ private:
             return true;
         }
 
-        const bool is_escape = key == LV_KEY_ESC;
-        const bool is_home_exit_key =
-            key == '4' &&
-            ((!long_pressed && view_model_.current_page() == model::AppPage::Apple) ||
-             (long_pressed && exit_key_pressed_ == key));
-        if (!is_escape && !is_home_exit_key) {
-            return false;
+        if (key != LV_KEY_ESC) {
+            return !long_pressed && view_model_.handle_cube_key(key);
         }
 
         if (long_pressed) {
-            if (exit_key_pressed_ == key && exit_armed_) {
+            if (exit_key_pressed_ == key) {
                 toast_->hide();
                 view_model_.request_quit();
             }
         }
         else {
             exit_key_pressed_ = key;
-            exit_armed_ = view_model_.current_page() == model::AppPage::Apple;
-            if (exit_armed_) {
-                toast_->show_persistent_highlighted("Hold ",
-                                                    "ESC",
-                                                    " to exit",
-                                                    view::widgets::ToastTone::Warning);
-            }
+            toast_->show_persistent_highlighted("Hold ",
+                                                "ESC",
+                                                " to exit",
+                                                view::widgets::ToastTone::Warning);
         }
         return true;
     }
@@ -202,14 +194,8 @@ private:
             return;
         }
 
-        if (exit_armed_) {
-            toast_->hide();
-        } else if (key == LV_KEY_ESC &&
-                   view_model_.current_page() == model::AppPage::Butter) {
-            view_model_.show_apple_page();
-        }
+        toast_->hide();
         exit_key_pressed_ = 0;
-        exit_armed_ = false;
     }
 
     static bool global_key_listener(uint32_t key,
@@ -231,7 +217,6 @@ private:
     std::unique_ptr<view::widgets::Toast> toast_;
     std::unique_ptr<view::widgets::HelpPopup> help_popup_;
     uint32_t exit_key_pressed_{0};
-    bool exit_armed_{false};
 };
 
 #if !USE_DESKTOP

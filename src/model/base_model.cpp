@@ -9,11 +9,7 @@
 namespace model {
 
 const char* BaseModel::app_title() const {
-    return "Template App";
-}
-
-const char* BaseModel::greeting() const {
-    return "Hello World";
+    return "Rubik's 2x2x2";
 }
 
 bool BaseModel::dark_mode() const {
@@ -29,16 +25,7 @@ void BaseModel::toggle_dark_mode() {
 }
 
 AppPage BaseModel::current_page() const {
-    return current_page_;
-}
-
-
-void BaseModel::set_current_page(AppPage page) {
-    current_page_ = page;
-}
-
-void BaseModel::toggle_page() {
-    current_page_ = current_page_ == AppPage::Apple ? AppPage::Butter : AppPage::Apple;
+    return AppPage::Cube;
 }
 
 } // namespace model

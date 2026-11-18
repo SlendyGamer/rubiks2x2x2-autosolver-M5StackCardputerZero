@@ -8,6 +8,8 @@ cmake_minimum_required(VERSION 3.31)
 
 project(template_app VERSION 0.2.1 LANGUAGES C CXX)
 
+find_package(Threads REQUIRED)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -429,6 +431,23 @@ target_link_libraries(${PROJECT_NAME}_platform
 )
 
 # ====================================================
+# Solver (legacy C search code, DFS/BFS)
+# ====================================================
+add_library(${PROJECT_NAME}_solver
+    STATIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/solver/rubik_solver.c"
+)
+
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/src/solver/rubik_solver.c"
+    PROPERTIES COMPILE_OPTIONS "-w"
+)
+
+target_include_directories(${PROJECT_NAME}_solver
+    PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/solver"
+)
+
+# ====================================================
 # Model sources
 # ====================================================
 file(GLOB_RECURSE MODEL_SOURCES CONFIGURE_DEPENDS
@@ -444,6 +463,11 @@ add_library(${PROJECT_NAME}_model
 target_include_directories(${PROJECT_NAME}_model
     PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src/model"
+)
+
+target_link_libraries(${PROJECT_NAME}_model
+    PUBLIC
+        ${PROJECT_NAME}_solver
 )
 
 # ====================================================
@@ -499,6 +523,7 @@ target_link_libraries(${PROJECT_NAME}_view
         lvgl
         ${PROJECT_NAME}_reactive
         ${PROJECT_NAME}_platform
+        ${PROJECT_NAME}_model
 )
 
 # ====================================================
@@ -527,6 +552,7 @@ target_link_libraries(${PROJECT_NAME}_viewmodel
         ${PROJECT_NAME}_reactive
         ${PROJECT_NAME}_model
         ${PROJECT_NAME}_platform
+        Threads::Threads
 )
 
 

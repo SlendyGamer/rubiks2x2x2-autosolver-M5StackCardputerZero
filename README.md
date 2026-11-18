@@ -46,16 +46,13 @@ It is intended to be used as a clean development baseline: desktop builds use an
 In this example project, we used small MVVM-style structure around LVGL:
 
 - **UI layer**: screens and widgets are implemented with LVGL objects. `BaseScreen` owns the page root, title bar, nav bar, and page content. Widgets derive from `BaseWidgets` and expose a `build()` entry point.
-- **Data model**: `BaseModel` stores application state such as current page and theme mode.
-- **View model**: `BaseViewModel` exposes model state as LVGL observer subjects and provides UI actions such as page switching, counter updates, theme toggle, and quit request.
+- **Data model**: `CubeModel` holds the 24 sticker labels and wraps the C solver API; `BaseModel` stores the theme mode.
+- **View model**: `BaseViewModel` exposes the cube state, turn animation, camera and solver search (run on a worker thread) as LVGL observer subjects, and handles the cube keys.
 - **Reactive/data binding**: `src/reactive` wraps LVGL observer subjects and common bindings so labels, styles, flags, widget values, and events can be connected to application state.
 - **Data flow**: user input triggers widget callbacks, callbacks update `BaseViewModel`, view model publishes subjects, and bound UI objects refresh automatically through LVGL observers.
-- **Platform layer**: platform code owns Linux input integration and other hardware-facing services. The nav bar maps hardware/keyboard keys `4` to `8`, plus `ESC` for quit.
+- **Platform layer**: platform code owns Linux input integration and other hardware-facing services, including the cube keys, `Shift` handling and arrow-key autorepeat.
 
-Current demo UI:
-
-- Page 1: Hello World, font weight toggle, LVGL version info, light/dark theme toggle, page navigation.
-- Page 2: Counter page, increment/decrement actions, simple page navigation.
+Current UI: a single cube screen with the 3D cube on the left, the status and the solution moves on the right, and the key hints in the bottom bar.
 
 ## Repository Layout
 
@@ -87,7 +84,7 @@ Current demo UI:
 ### Modules
 
 - `src/app/asset_manager.*`: resolves runtime assets from the optional CMake asset root, source tree `assets/`, and installed `/usr/share/<APP_NAME>/` path.
-- `src/app/screen_namager.cpp`: switches LVGL screens when the current page subject changes.
+- `src/app/screen_namager.cpp`: loads the cube screen.
 - `src/app/desktop_simulator_frame.*`: owns the desktop SDL window, renderer, high-resolution shell textures, input, and LVGL texture composition.
 - `src/config/lv_conf_desktop.h`: desktop LVGL rendering settings.
 - `src/config/lv_conf_cm0.h`: embedded Linux/CardputerZero LVGL settings.
@@ -410,24 +407,18 @@ sudo apt install --no-install-recommends ./TemplateApp_0.2.1_rev1_arm64.deb
 
 ### Navigation Keys
 
-The first page bottom nav bar maps hardware/keyboard keys from left to right:
-
-| Key | Nav item |
-| --- | --- |
-| `4` | First icon button |
-| `5` | Second icon button |
-| `6` | Third icon button |
-| `7` | Fourth icon button |
-| `8` | Fifth icon button |
-| `ESC` | First icon button / quit |
-
-The counter page uses direct keyboard shortcuts:
+The app is a 3D interactive 2x2x2 Rubik's cube with an automatic solver. Keys:
 
 | Key | Action |
 | --- | --- |
-| `ESC` | Return to the first page |
-| `Left` | Decrease the counter |
-| `Right` | Increase the counter |
+| `X` / `Y` / `Z` | Turn a layer (hold `Shift` for the reverse turn) |
+| `B` / `D` | Search a solution with BFS / DFS |
+| `S` | Play the solution found |
+| Arrows | Rotate the camera |
+| Hold `ESC` | Exit |
+| `HELP` | Keyboard help |
+
+The solver is the original C code under `src/solver/legacy/` (kept unchanged); `src/solver/rubik_solver.{h,c}` is a thin wrapper that runs it. The OpenGL/GLUT rendering of the original program is replaced by a software 3D renderer in `src/view/widgets/cube_view.cpp`, drawn with LVGL triangles.
 
 ### Adding a Screen
 

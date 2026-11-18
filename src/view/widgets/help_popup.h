@@ -6,7 +6,6 @@
 
 #pragma once
 
-#include "base_model.h"
 #include "base_widget.h"
 
 #include <array>
@@ -28,7 +27,7 @@ public:
               app::AssetManager& assets);
 
     void build() override;
-    void show(model::AppPage page);
+    void show();
     void hide();
     bool visible() const;
 
@@ -39,7 +38,7 @@ private:
         lv_obj_t* action{nullptr};
     };
 
-    void update_rows(model::AppPage page);
+    void update_rows();
     void apply_theme();
     static void backdrop_clicked_cb(lv_event_t* event);
     static void theme_observer_cb(lv_observer_t* observer, lv_subject_t* subject);

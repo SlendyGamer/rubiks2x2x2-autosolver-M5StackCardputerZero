@@ -46,6 +46,9 @@ struct EvdevKeypad {
     bool router_event_pending{false};
     uint32_t router_key{0};
     bool router_pressed{false};
+    int shift_down{0};
+    // Key reported on press for each evdev code, so the release matches even if Shift changed meanwhile.
+    std::array<uint32_t, KEY_MAX + 1> pressed_as{};
 };
 #endif
 
@@ -126,7 +129,12 @@ void ensure_long_press_timer() {
 
 void route_key_state(uint32_t key, bool pressed) {
     const bool new_hold = pressed && (!last_key_pressed || pressed_key != key);
-    if (new_hold) {
+    const bool arrow_repeat = pressed && last_key_pressed && pressed_key == key &&
+                              (key == LV_KEY_UP || key == LV_KEY_DOWN || key == LV_KEY_LEFT || key == LV_KEY_RIGHT);
+    if (arrow_repeat) {
+        emit_global_key(key, false);
+    }
+    else if (new_hold) {
         pressed_key = key;
         press_started_at = lv_tick_get();
         long_press_sent = false;
@@ -193,6 +201,20 @@ uint32_t map_evdev_key(uint16_t code) {
             return LV_KEY_RIGHT;
         case KEY_Z:
             return 'z';
+        case KEY_X:
+            return 'x';
+        case KEY_Y:
+            return 'y';
+        case KEY_B:
+            return 'b';
+        case KEY_D:
+            return 'd';
+        case KEY_S:
+            return 's';
+        case KEY_UP:
+            return LV_KEY_UP;
+        case KEY_DOWN:
+            return LV_KEY_DOWN;
         case KEY_C:
             return 'c';
         case KEY_4:
@@ -226,6 +248,8 @@ bool has_nav_keys(int fd) {
     };
 
     return has_key(KEY_ESC) || has_key(KEY_LEFT) || has_key(KEY_RIGHT) || has_key(KEY_Z) ||
+           has_key(KEY_X) || has_key(KEY_Y) || has_key(KEY_B) || has_key(KEY_D) || has_key(KEY_S) ||
+           has_key(KEY_UP) || has_key(KEY_DOWN) ||
            has_key(KEY_C) || has_key(KEY_4) || has_key(KEY_5) || has_key(KEY_6) ||
            has_key(KEY_7) || has_key(KEY_8) || has_key(KEY_SYSRQ) || has_key(KEY_HELP);
 }
@@ -244,9 +268,35 @@ void evdev_read_cb(lv_indev_t* indev, lv_indev_data_t* data) {
             continue;
         }
 
-        const auto key = map_evdev_key(input.code);
-        if (!key || input.value == 2) {
+        if (input.code == KEY_LEFTSHIFT || input.code == KEY_RIGHTSHIFT) {
+            keypad->shift_down += input.value == 1 ? 1 : (input.value == 0 ? -1 : 0);
+            if (keypad->shift_down < 0) {
+                keypad->shift_down = 0;
+            }
             continue;
+        }
+
+        auto key = map_evdev_key(input.code);
+        if (!key || input.code > KEY_MAX) {
+            continue;
+        }
+
+        const bool arrow = key == LV_KEY_UP || key == LV_KEY_DOWN || key == LV_KEY_LEFT || key == LV_KEY_RIGHT;
+        if (input.value == 2 && !arrow) {
+            continue;
+        }
+
+        if (input.value == 0 && keypad->pressed_as[input.code]) {
+            key = keypad->pressed_as[input.code];
+            keypad->pressed_as[input.code] = 0;
+        }
+        else {
+            if (keypad->shift_down > 0 && key >= 'a' && key <= 'z') {
+                key = key - 'a' + 'A';
+            }
+            if (input.value != 0) {
+                keypad->pressed_as[input.code] = key;
+            }
         }
 
         keypad->key = key;

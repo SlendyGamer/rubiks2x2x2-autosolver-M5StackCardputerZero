@@ -21,18 +21,12 @@ struct HelpRow {
     const char* action;
 };
 
-constexpr std::array<HelpRow, 5> kAppleRows = {{
-    {"HOLD ESC / 4", "Exit"},
-    {"5", "Text weight"},
-    {"6", "Light / dark"},
-    {"7", "Version info"},
-    {"8", "Open counter"},
-}};
-
-constexpr std::array<HelpRow, 3> kButterRows = {{
-    {"ESC", "Back to home"},
-    {"Z / LEFT", "Decrease"},
-    {"C / RIGHT", "Increase"},
+constexpr std::array<HelpRow, 5> kCubeRows = {{
+    {"X / Y / Z", "Turn (Shift reverses)"},
+    {"B / D", "Search BFS / DFS"},
+    {"S", "Play solution"},
+    {"ARROWS", "Rotate camera"},
+    {"HOLD ESC", "Exit"},
 }};
 
 } // namespace
@@ -131,14 +125,14 @@ void HelpPopup::build() {
     hide();
 }
 
-void HelpPopup::show(model::AppPage page) {
+void HelpPopup::show() {
     if (!core_obj_) {
         build();
     }
     if (!core_obj_) {
         return;
     }
-    update_rows(page);
+    update_rows();
     apply_theme();
     lv_obj_move_foreground(core_obj_);
     lv_obj_remove_flag(core_obj_, LV_OBJ_FLAG_HIDDEN);
@@ -155,19 +149,11 @@ bool HelpPopup::visible() const {
            !lv_obj_has_flag(core_obj_, LV_OBJ_FLAG_HIDDEN);
 }
 
-void HelpPopup::update_rows(model::AppPage page) {
-    const bool butter = page == model::AppPage::Butter;
-    lv_label_set_text(page_badge_, butter ? "COUNTER" : "HOME");
+void HelpPopup::update_rows() {
+    lv_label_set_text(page_badge_, "CUBE");
     for (std::size_t i = 0; i < rows_.size(); ++i) {
-        const bool row_visible = butter ? i < kButterRows.size() : i < kAppleRows.size();
-        if (!row_visible) {
-            lv_obj_add_flag(rows_[i].row, LV_OBJ_FLAG_HIDDEN);
-            continue;
-        }
-        lv_obj_remove_flag(rows_[i].row, LV_OBJ_FLAG_HIDDEN);
-        const auto& row = butter ? kButterRows[i] : kAppleRows[i];
-        lv_label_set_text(rows_[i].key, row.key);
-        lv_label_set_text(rows_[i].action, row.action);
+        lv_label_set_text(rows_[i].key, kCubeRows[i].key);
+        lv_label_set_text(rows_[i].action, kCubeRows[i].action);
     }
 }
 
