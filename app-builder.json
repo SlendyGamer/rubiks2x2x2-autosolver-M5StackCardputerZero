@@ -5,7 +5,7 @@
   "description": "Interactive 3D Rubik's cube 2x2x2 with automatic solver for CardputerZero",
 
   "store": {
-    "summary": "Interactive 3D Rubik's cube 2x2x2 with automatic solver.",
+    "summary": "Interactive 3D Rubik's cube 2x2x2 with an auto-solver using BFS (shortest solution) and DFS.",
     "description": "Play with a 2x2x2 Rubik's cube rendered in 3D on the CardputerZero screen. Turn the faces with the keyboard, orbit the camera by holding the arrow keys, scramble it and let the app find the shortest solution (breadth-first search, at most 14 moves) or any solution with a depth-first search. Press S to watch the solution being played step by step, and H to hide the interface and see the cube alone.",
     "categories": ["Games", "Education"],
     "screenshots": [
