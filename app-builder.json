@@ -16,7 +16,7 @@
     ],
     "icon": "assets/store/icon.png",
     "license": "MIT",
-    "source_repo": "",
+    "source_repo": "https://github.com/SlendyGamer/rubiks2x2x2-autosolver-M5StackCardputerZero",
     "author": { "display_name": "SlendyGamer", "email": "gabrielcarotti@hotmail.com" },
     "share_code": "RBK2",
     "permissions": {
