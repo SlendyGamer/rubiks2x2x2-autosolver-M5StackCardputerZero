@@ -1,1 +1,1 @@
-/etc/template-app.conf
+/etc/@PROJECT_NAME@.conf

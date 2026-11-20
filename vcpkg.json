@@ -1,5 +1,5 @@
 {
-  "name": "template-app-simulator-on-windows",
+  "name": "rubiks2x2x2-autosolver-simulator-on-windows",
   "version": "1.0.0",
   "dependencies": [
     "fmt",

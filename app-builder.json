@@ -1,22 +1,24 @@
 {
-  "app_name": "Template",
-  "package_name": "template_app",
+  "app_name": "Rubiks 2x2x2",
+  "package_name": "rubiks2x2x2-autosolver",
   "version": "0.2.1",
-  "description": "Template Application for CardputerZero",
+  "description": "Interactive 3D Rubik's cube 2x2x2 with automatic solver for CardputerZero",
 
   "store": {
-    "summary": "TODO: one line about your app (placeholders are auto-rejected)",
-    "description": "TODO: a longer description for the store detail page. Every TODO field in this store section must be replaced before publishing — the store validator rejects unedited template metadata.",
-    "categories": ["TODO: pick 1-2 real categories from docs/APP_BUILDER_JSON.md"],
+    "summary": "Interactive 3D Rubik's cube 2x2x2 with automatic solver.",
+    "description": "Play with a 2x2x2 Rubik's cube rendered in 3D on the CardputerZero screen. Turn the faces with the keyboard, orbit the camera by holding the arrow keys, scramble it and let the app find the shortest solution (breadth-first search, at most 14 moves) or any solution with a depth-first search. Press S to watch the solution being played step by step, and H to hide the interface and see the cube alone.",
+    "categories": ["Games", "Education"],
     "screenshots": [
-      "screenshot/app-simulator-dark-darwin.png",
-      "screenshot/app-simulator-light-darwin.png"
+      "screenshot/01-scrambled.png",
+      "screenshot/02-solution-found.png",
+      "screenshot/03-solved.png",
+      "screenshot/04-hidden-ui.png"
     ],
-    "icon": "assets/images/template.png",
-    "license": "TODO: an SPDX id, e.g. MIT",
-    "source_repo": "https://github.com/CardputerZero/Template",
-    "author": { "github": "TODO-your-github-login", "display_name": "TODO: Your Name" },
-    "share_code": "TODO",
+    "icon": "assets/store/icon.png",
+    "license": "MIT",
+    "source_repo": "",
+    "author": { "display_name": "SlendyGamer", "email": "gabrielcarotti@hotmail.com" },
+    "share_code": "RBK2",
     "permissions": {
       "camera": false,
       "microphone": false,

@@ -16,7 +16,7 @@
 #include <utility>
 
 #ifndef APP_NAME
-#define APP_NAME "template_app"
+#define APP_NAME "rubiks2x2x2-autosolver"
 #endif
 
 #ifndef APP_CMAKE_ASSETS_ROOT
