@@ -56,11 +56,17 @@ int rubik_solve(const char pattern[RUBIK_STICKER_COUNT],
                 RubikAlgo algo,
                 char* moves_out,
                 int max_moves) {
+    if(algo == RUBIK_ALGO_BFS_BIDIR) {
+        return rubik_bidir_solve(pattern, moves_out, max_moves);
+    }
+
     char goal[RUBIK_STICKER_COUNT];
     memcpy(goal, kGoal, RUBIK_STICKER_COUNT);
 
     /* Same sequence as the 'd' / 'b' keys in 3d/main.c */
     No* state = (No*)malloc(sizeof(No));
+    /* search() does not initialise cNx/cNy/cNz of the root; garbage there prunes valid moves. */
+    memset(state, 0, sizeof(No));
     memcpy(state->pattern, pattern, RUBIK_STICKER_COUNT);
     const strat ds = (algo == RUBIK_ALGO_BFS) ? BFS : DFS;
     void* open = ds.criaStruct();

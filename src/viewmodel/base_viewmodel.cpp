@@ -277,7 +277,7 @@ void BaseViewModel::search(bool use_bfs) {
 
     worker_ = std::thread([job] {
         job->count = rubik_solve(job->pattern.data(),
-                                 job->use_bfs ? RUBIK_ALGO_BFS : RUBIK_ALGO_DFS,
+                                 job->use_bfs ? RUBIK_ALGO_BFS_BIDIR : RUBIK_ALGO_DFS,
                                  job->moves.data(),
                                  kMaxSolutionMoves);
         job->done.store(true);

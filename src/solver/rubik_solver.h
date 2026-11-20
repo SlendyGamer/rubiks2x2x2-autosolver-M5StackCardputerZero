@@ -17,7 +17,10 @@ extern "C" {
 
 typedef enum {
     RUBIK_ALGO_DFS = 0,
+    /* Original BFS: no visited set, memory grows very fast (~1.4 GB for 12 moves). */
     RUBIK_ALGO_BFS = 1,
+    /* Bidirectional BFS with visited set (rubik_bidir.c): same shortest result, tiny memory. */
+    RUBIK_ALGO_BFS_BIDIR = 2,
 } RubikAlgo;
 
 void rubik_goal_pattern(char out[RUBIK_STICKER_COUNT]);
@@ -35,6 +38,12 @@ int rubik_solve(const char pattern[RUBIK_STICKER_COUNT],
                 RubikAlgo algo,
                 char* moves_out,
                 int max_moves);
+
+/*
+ * Bidirectional BFS (rubik_bidir.c). Same contract as rubik_solve(): returns the
+ * number of moves written to `moves_out`, or -1 when no solution was found.
+ */
+int rubik_bidir_solve(const char pattern[RUBIK_STICKER_COUNT], char* moves_out, int max_moves);
 
 #ifdef __cplusplus
 }

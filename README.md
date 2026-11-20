@@ -419,7 +419,11 @@ The app is a 3D interactive 2x2x2 Rubik's cube with an automatic solver. Keys:
 | Hold `ESC` | Exit |
 | `HELP` | Keyboard help |
 
-The solver is the original C code under `src/solver/legacy/` (kept unchanged); `src/solver/rubik_solver.{h,c}` is a thin wrapper that runs it. The OpenGL/GLUT rendering of the original program is replaced by a software 3D renderer in `src/view/widgets/cube_view.cpp`, drawn with LVGL triangles.
+The solver is the original C code under `src/solver/legacy/` (kept unchanged); `src/solver/rubik_solver.{h,c}` is a thin wrapper that runs it. The DFS key runs the original `search()` as is.
+
+The BFS key (`B`) runs a bidirectional BFS in `src/solver/rubik_bidir.c`, which is not part of the original code. The original BFS has no visited set and needs about 1.4 GB of RAM for a 12-move scramble, which is too much for the device. The bidirectional version stores each state once and searches from the scrambled cube and from the solved cube until they meet. It returns a shortest solution (same metric as the original: each of `x X y Y z Z` is 1 move) in milliseconds and a few MB of RAM, for any scramble (at most 14 moves). The original BFS is still available as `RUBIK_ALGO_BFS` in `rubik_solver.h`.
+
+The OpenGL/GLUT rendering of the original program is replaced by a software 3D renderer in `src/view/widgets/cube_view.cpp`, drawn with LVGL triangles.
 
 ### Adding a Screen
 

@@ -436,6 +436,7 @@ target_link_libraries(${PROJECT_NAME}_platform
 add_library(${PROJECT_NAME}_solver
     STATIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src/solver/rubik_solver.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/solver/rubik_bidir.c"
 )
 
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/src/solver/rubik_solver.c"
