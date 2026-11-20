@@ -10,10 +10,11 @@
 namespace view::widgets {
 
 // Software 3D renderer for the 2x2x2 cube. Replaces the OpenGL drawCube() of 3d/main.c:
-// same stickers, colors, layer turn animation and camera, drawn with LVGL triangles.
+// same stickers, colors, layer turn animation and camera, rasterized with an antialiased polygon fill.
 class CubeView : public BaseWidgets {
 public:
     CubeView(lv_obj_t* parent, viewmodel::BaseViewModel& view_model);
+    ~CubeView() override;
 
     void build() override;
 
@@ -24,6 +25,7 @@ private:
     static void revision_observer_cb(lv_observer_t* observer, lv_subject_t* subject);
 
     viewmodel::BaseViewModel& view_model_;
+    lv_draw_buf_t* canvas_{nullptr};
 };
 
 } // namespace view::widgets

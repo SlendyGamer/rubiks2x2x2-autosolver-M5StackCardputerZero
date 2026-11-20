@@ -5,13 +5,20 @@
 #include "cube_view.h"
 
 #include "bindings.h"
+#include "src/misc/cache/instance/lv_image_cache.h"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <vector>
 
 namespace view::widgets {
 namespace {
+
+struct Pt {
+    float x;
+    float y;
+};
 
 constexpr int kInnerColorIndex = 24;
 
@@ -87,8 +94,8 @@ int sticker_index(int axis, int sign, int sx, int sy, int sz) {
 
 struct Face {
     float depth;
-    std::array<lv_point_precise_t, 4> body;
-    std::array<lv_point_precise_t, 4> sticker;
+    std::array<Pt, 4> body;
+    std::array<Pt, 4> sticker;
     int color_index;
     bool outer;
 };
@@ -102,26 +109,129 @@ int turning_axis(char move) {
     }
 }
 
-// The quad is split in 4 overlapping triangles so antialiasing leaves no seam on the diagonals.
-void fill_quad(lv_layer_t* layer, const std::array<lv_point_precise_t, 4>& quad, lv_color_t color) {
-    static constexpr int kTriangles[4][3] = {{0, 1, 2}, {0, 2, 3}, {0, 1, 3}, {1, 2, 3}};
+// lv_draw_triangle() snaps the vertices to whole pixels, which makes the cube edges crooked,
+// so the convex quads are rasterized here with sub-pixel vertices into an ARGB8888 buffer.
+// Coverage is exact horizontally and sampled kSubScans times per pixel row vertically.
+constexpr int kSubScans = 8;
 
-    lv_draw_triangle_dsc_t dsc;
-    lv_draw_triangle_dsc_init(&dsc);
-    dsc.color = color;
-    dsc.opa = LV_OPA_COVER;
-    for (const auto& triangle : kTriangles) {
-        for (int i = 0; i < 3; ++i) {
-            dsc.p[i] = quad[triangle[i]];
+class Raster {
+public:
+    explicit Raster(lv_draw_buf_t* buf)
+        : buf_(buf),
+          width_(static_cast<int>(buf->header.w)),
+          height_(static_cast<int>(buf->header.h)),
+          cover_(static_cast<size_t>(width_) + 2),
+          span_(static_cast<size_t>(width_) + 2) {}
+
+    void fill(const std::array<Pt, 4>& quad, lv_color_t color) {
+        float min_y = quad[0].y;
+        float max_y = quad[0].y;
+        for (const Pt& p : quad) {
+            min_y = std::min(min_y, p.y);
+            max_y = std::max(max_y, p.y);
         }
-        lv_draw_triangle(layer, &dsc);
+        const int first = std::max(0, static_cast<int>(std::floor(min_y)));
+        const int last = std::min(height_ - 1, static_cast<int>(std::floor(max_y)));
+
+        for (int row = first; row <= last; ++row) {
+            if (accumulate_row(quad, row)) {
+                blend_row(row, color);
+            }
+        }
     }
-}
+
+private:
+    // Fills cover_ with the partially covered pixels and span_ with the +/- steps of the fully covered run.
+    bool accumulate_row(const std::array<Pt, 4>& quad, int row) {
+        constexpr float kWeight = 1.0f / kSubScans;
+        std::fill(cover_.begin(), cover_.end(), 0.0f);
+        std::fill(span_.begin(), span_.end(), 0.0f);
+        bool touched = false;
+
+        for (int s = 0; s < kSubScans; ++s) {
+            const float y = static_cast<float>(row) + (static_cast<float>(s) + 0.5f) / kSubScans;
+            float lo = INFINITY;
+            float hi = -INFINITY;
+            for (int i = 0; i < 4; ++i) {
+                const Pt& a = quad[i];
+                const Pt& b = quad[(i + 1) % 4];
+                if ((a.y <= y) == (b.y <= y)) {
+                    continue;
+                }
+                const float x = a.x + (y - a.y) / (b.y - a.y) * (b.x - a.x);
+                lo = std::min(lo, x);
+                hi = std::max(hi, x);
+            }
+            lo = std::max(lo, 0.0f);
+            hi = std::min(hi, static_cast<float>(width_));
+            if (!(hi > lo)) {
+                continue;
+            }
+
+            touched = true;
+            const int il = static_cast<int>(lo);
+            const int ir = static_cast<int>(hi);
+            if (il == ir) {
+                cover_[il] += (hi - lo) * kWeight;
+                continue;
+            }
+            cover_[il] += (static_cast<float>(il + 1) - lo) * kWeight;
+            cover_[ir] += (hi - static_cast<float>(ir)) * kWeight;
+            if (ir > il + 1) {
+                span_[il + 1] += kWeight;
+                span_[ir] -= kWeight;
+            }
+        }
+        return touched;
+    }
+
+    void blend_row(int row, lv_color_t color) {
+        auto* px = reinterpret_cast<lv_color32_t*>(static_cast<uint8_t*>(buf_->data) +
+                                                   static_cast<size_t>(row) * buf_->header.stride);
+        float run = 0.0f;
+        for (int x = 0; x < width_; ++x) {
+            run += span_[x];
+            const float c = cover_[x] + run;
+            if (c < 0.004f) {
+                continue;
+            }
+            if (c >= 0.996f) {
+                px[x].blue = color.blue;
+                px[x].green = color.green;
+                px[x].red = color.red;
+                px[x].alpha = 255;
+                continue;
+            }
+            const float dst_weight = (static_cast<float>(px[x].alpha) / 255.0f) * (1.0f - c);
+            const float out_alpha = c + dst_weight;
+            const auto mix = [&](uint8_t src, uint8_t dst) {
+                return static_cast<uint8_t>((static_cast<float>(src) * c + static_cast<float>(dst) * dst_weight) /
+                                                out_alpha + 0.5f);
+            };
+            px[x].blue = mix(color.blue, px[x].blue);
+            px[x].green = mix(color.green, px[x].green);
+            px[x].red = mix(color.red, px[x].red);
+            px[x].alpha = static_cast<uint8_t>(out_alpha * 255.0f + 0.5f);
+        }
+    }
+
+    lv_draw_buf_t* buf_;
+    int width_;
+    int height_;
+    std::vector<float> cover_;
+    std::vector<float> span_;
+};
 
 } // namespace
 
 CubeView::CubeView(lv_obj_t* parent, viewmodel::BaseViewModel& view_model)
     : BaseWidgets(parent), view_model_(view_model) {}
+
+CubeView::~CubeView() {
+    if (canvas_) {
+        lv_draw_buf_destroy(canvas_);
+    }
+}
 
 void CubeView::build() {
     if (core_obj_) {
@@ -138,8 +248,25 @@ void CubeView::build() {
 void CubeView::draw(lv_layer_t* layer) {
     lv_area_t area;
     lv_obj_get_coords(core_obj_, &area);
-    const float center_x = static_cast<float>(area.x1) + static_cast<float>(lv_area_get_width(&area)) / 2.0f;
-    const float center_y = static_cast<float>(area.y1) + static_cast<float>(lv_area_get_height(&area)) / 2.0f;
+    const int width = lv_area_get_width(&area);
+    const int height = lv_area_get_height(&area);
+    if (width <= 0 || height <= 0) {
+        return;
+    }
+    if (!canvas_ || static_cast<int>(canvas_->header.w) != width || static_cast<int>(canvas_->header.h) != height) {
+        if (canvas_) {
+            lv_draw_buf_destroy(canvas_);
+        }
+        canvas_ = lv_draw_buf_create(static_cast<uint32_t>(width), static_cast<uint32_t>(height),
+                                     LV_COLOR_FORMAT_ARGB8888, LV_STRIDE_AUTO);
+        if (!canvas_) {
+            return;
+        }
+    }
+    lv_draw_buf_clear(canvas_, nullptr);
+
+    const float center_x = static_cast<float>(width) / 2.0f;
+    const float center_y = static_cast<float>(height) / 2.0f;
 
     const auto& stickers = view_model_.cube().stickers();
     const char turning = view_model_.turning_move();
@@ -164,8 +291,7 @@ void CubeView::draw(lv_layer_t* layer) {
     };
     const auto project = [&](Vec3 p) {
         const float depth = std::max(-p.z, 0.1f);
-        return lv_point_precise_t{static_cast<lv_value_precise_t>(center_x + kFocalLength * p.x / depth),
-                                  static_cast<lv_value_precise_t>(center_y - kFocalLength * p.y / depth)};
+        return Pt{center_x + kFocalLength * p.x / depth, center_y - kFocalLength * p.y / depth};
     };
 
     std::array<Face, 48> faces;
@@ -226,16 +352,24 @@ void CubeView::draw(lv_layer_t* layer) {
     std::sort(faces.begin(), faces.begin() + static_cast<std::ptrdiff_t>(face_count),
               [](const Face& a, const Face& b) { return a.depth < b.depth; });
 
+    Raster raster(canvas_);
     for (size_t i = 0; i < face_count; ++i) {
         const Face& face = faces[i];
         if (face.outer) {
-            fill_quad(layer, face.body, lv_color_hex(kBodyColor));
-            fill_quad(layer, face.sticker, sticker_color(face.color_index));
+            raster.fill(face.body, lv_color_hex(kBodyColor));
+            raster.fill(face.sticker, sticker_color(face.color_index));
         }
         else {
-            fill_quad(layer, face.body, sticker_color(kInnerColorIndex));
+            raster.fill(face.body, sticker_color(kInnerColorIndex));
         }
     }
+
+    // The buffer is rewritten on every draw, so drop any decoded copy cached for it.
+    lv_image_cache_drop(canvas_);
+    lv_draw_image_dsc_t image;
+    lv_draw_image_dsc_init(&image);
+    image.src = canvas_;
+    lv_draw_image(layer, &image, &area);
 }
 
 void CubeView::draw_event_cb(lv_event_t* event) {
